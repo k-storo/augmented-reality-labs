@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+
+<script src=https://mrdoob.github.io/three.js/build/three.min.js ></script>
+<script src=https://mrdoob.github.io/three.js/examples/js/libs/stats.min.js ></script>
+<script src="https://aframe.io/releases/0.8.0/aframe.min.js"></script>
+<script src="https://cdn.rawgit.com/jeromeetienne/AR.js/1.6.0/aframe/build/aframe-ar.js"></script>
+
+<body style='margin : 0px; overflow: hidden; font-family: Monospace;'>
+<script>
+
+    var x,y,z;
+    var a = 0.0;
+	var theta = 0.0;
+    var m = 0.0;
+    var c = 0;
+
+	function mySurface(u, t, vector) {
+
+	    u = 4*Math.PI*u;
+		t = 5*t;
+        a=0.8;
+        m=14;
+        theta = 0.2*Math.PI;
+                
+        c= 2/m;
+                
+		vector.x = ((a + t * Math.cos(theta) + c * t * t * Math.sin(theta)) * Math.cos(u));
+		vector.y = ((a + t * Math.cos(theta) + c * t * t * Math.sin(theta)) * Math.sin(u));
+		vector.z = (-t * Math.sin(theta) + c * t * t * Math.cos(theta));
+         return vector;
+    }
+
+	var renderer	= new THREE.WebGLRenderer({
+		alpha: 1, antialias: true, clearColor: 0xffffff
+	});
+	renderer.setClearColor(new THREE.Color('lightgrey'), 0)
+	renderer.setSize( window.innerWidth, window.innerHeight );
+	renderer.domElement.style.position = 'absolute'
+	renderer.domElement.style.top = '0px'
+	renderer.domElement.style.left = '0px'
+	document.body.appendChild( renderer.domElement );
+
+	var onRenderFcts= [];
+
+	var scene	= new THREE.Scene();
+
+	var camera = new THREE.Camera();
+	scene.add(camera);
+
+	var arToolkitSource = new THREEx.ArToolkitSource({
+		sourceType : 'webcam',
+	})
+
+	arToolkitSource.init(function onReady(){
+		onResize()
+	})
+
+	window.addEventListener('resize', function(){
+		onResize()
+	})
+	function onResize(){
+		arToolkitSource.onResizeElement()
+		arToolkitSource.copyElementSizeTo(renderer.domElement)
+		if( arToolkitContext.arController !== null ){
+			arToolkitSource.copyElementSizeTo(arToolkitContext.arController.canvas)
+		}
+	}
+
+	var arToolkitContext = new THREEx.ArToolkitContext({
+		cameraParametersUrl: 'camera_para.dat',
+		detectionMode: 'mono',
+		maxDetectionRate: 30,
+		canvasWidth: 80*3,
+		canvasHeight: 60*3,
+	})
+
+	arToolkitContext.init(function onCompleted(){
+		camera.projectionMatrix.copy( arToolkitContext.getProjectionMatrix() );
+	})
+
+	onRenderFcts.push(function(){
+		if( arToolkitSource.ready === false )	return
+
+		arToolkitContext.update( arToolkitSource.domElement )
+	})
+
+	var markerRoot = new THREE.Group
+	scene.add(markerRoot)
+	var artoolkitMarker = new THREEx.ArMarkerControls(arToolkitContext, markerRoot, {
+		type : 'pattern',
+		patternUrl : 'mypattern.patt'
+	})
+
+	var smoothedRoot = new THREE.Group()
+	scene.add(smoothedRoot)
+	var smoothedControls = new THREEx.ArSmoothedControls(smoothedRoot, {
+		lerpPosition: 0.4,
+		lerpQuaternion: 0.3,
+		lerpScale: 1,
+	})
+	onRenderFcts.push(function(delta){
+		smoothedControls.update(markerRoot)
+	})
+
+	var arWorldRoot = smoothedRoot
+
+	var geometry	= new THREE.ParametricGeometry( mySurface, 36, 100);
+	var material	= new THREE.MeshNormalMaterial();
+	var mesh	= new THREE.Mesh( geometry, material );
+
+	mesh.scale.set(0.1,0.1,0.1);
+
+	var euler = new THREE.Euler();
+	euler.set( -1, -1, 0, 'YXZ' );
+	mesh.quaternion.setFromEuler( euler );
+	arWorldRoot.add( mesh );
+
+
+	var stats = new Stats();
+	// document.body.appendChild( stats.dom );
+	onRenderFcts.push(function(){
+		renderer.render( scene, camera );
+		stats.update();
+	})
+
+	var lastTimeMsec= null
+	requestAnimationFrame(function animate(nowMsec){
+		requestAnimationFrame( animate );
+		lastTimeMsec	= lastTimeMsec || nowMsec-1000/60;
+		var deltaMsec	= Math.min(200, nowMsec - lastTimeMsec);
+		lastTimeMsec	= nowMsec;
+		onRenderFcts.forEach(function(onRenderFct){
+			onRenderFct(deltaMsec/1000, nowMsec/1000)
+		})
+	})
+</script>
+</body>
