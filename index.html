@@ -19,10 +19,10 @@
                 
         c= 2/m;
                 
-		vector.x = ((a + t * Math.cos(theta) + c * t * t * Math.sin(theta)) * Math.cos(u));
-		vector.y = ((a + t * Math.cos(theta) + c * t * t * Math.sin(theta)) * Math.sin(u));
-		vector.z = (-t * Math.sin(theta) + c * t * t * Math.cos(theta));
-         return vector;
+	vector.x = ((a + t * Math.cos(theta) + c * t * t * Math.sin(theta)) * Math.cos(u));
+	vector.y = ((a + t * Math.cos(theta) + c * t * t * Math.sin(theta)) * Math.sin(u));
+	vector.z = (-t * Math.sin(theta) + c * t * t * Math.cos(theta));
+        return vector;
     }
 
 	var renderer	= new THREE.WebGLRenderer({
@@ -83,7 +83,7 @@
 	scene.add(markerRoot)
 	var artoolkitMarker = new THREEx.ArMarkerControls(arToolkitContext, markerRoot, {
 		type : 'pattern',
-		patternUrl : 'my_ar_marker_pattern.patt'
+		patternUrl : 'mypattern.patt'
 	})
 
 	var smoothedRoot = new THREE.Group()
